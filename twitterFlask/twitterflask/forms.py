@@ -1,4 +1,6 @@
 from flask_wtf import FlaskForm
+from flask_wtf.file import FileField, FileAllowed
+from flask_login import current_user
 from wtforms import StringField, PasswordField, SubmitField, BooleanField
 from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError
 from twitterflask.models import User
@@ -29,3 +31,21 @@ class LoginForm(FlaskForm):
     password = PasswordField('Senha',validators=[DataRequired()])
     remember = BooleanField('Mantenha-me conectado')
     submit = SubmitField('Log In')
+
+class UpdateAccountForm(FlaskForm):
+    username = StringField('Nome de usuário', validators=[DataRequired(), Length(min=2, max=25)])
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    picture = FileField('Atualizar foto de perfil',validators=[FileAllowed(['jpg','png'], message='Apenas arquivos JPG e PNG são permitidos!')])
+    submit = SubmitField('Atualizar')
+
+    def validate_username(self, username):
+        if username.data != current_user.username:
+            user = User.query.filter_by(username=username.data).first()
+            if user:
+                raise ValidationError('Usuário já existente.')
+    
+    def validate_email(self, email):
+        if email.data != current_user.email:
+            user = User.query.filter_by(email=email.data).first()
+            if user:
+                raise ValidationError('Email já usado.')
